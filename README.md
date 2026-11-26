@@ -20,6 +20,20 @@ thread asked for the automatic behaviour as an opt-in. Installing this plugin is
 Requires **Godot 4.2 or later**, because the plugin uses the `EditorInterface` singleton.
 See [Compatibility](#compatibility) for which versions have actually been tested.
 
+### From the official asset catalogs
+
+Rename on Create was submitted to both official catalogs on 2026-11-26 and is
+waiting for review. The links work once it is approved.
+
+- [Godot Asset Store](https://store.godotengine.org/asset/khkhk/rename-on-create/):
+  the Asset Store tab in Godot 4.7 and later.
+- [Godot Asset Library (search for "Rename on Create")](https://godotengine.org/asset-library/asset?filter=Rename+on+Create):
+  the AssetLib tab in Godot 4.2 to 4.6. The direct link gets its number when
+  the asset is approved.
+
+Both install the same `addons/rename_on_create/` folder. Then enable the plugin
+as in step 2 above.
+
 ## Behaviour
 
 The plugin acts when the Create New Node dialog creates a node. You can open that
