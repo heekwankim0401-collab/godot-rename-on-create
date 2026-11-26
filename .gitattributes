@@ -1,0 +1,10 @@
+# Normalize line endings.
+* text=auto eol=lf
+
+# Only include the add-on folder when downloading from the Asset Library.
+/** export-ignore
+/addons !export-ignore
+/addons/** !export-ignore
+# The test runner is not part of the add-on.
+/addons/rename_on_create_test export-ignore
+/addons/rename_on_create_test/** export-ignore

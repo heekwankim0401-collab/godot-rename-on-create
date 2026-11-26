@@ -123,7 +123,10 @@ func _rename_state(node: Node) -> int:
 	if selection.size() != 1 or selection[0] != node:
 		return ABORT # Something else is selected, e.g. after "Reparent to New Node".
 	if not _scene_tree.is_visible_in_tree():
-		return ABORT # Scene dock is hidden; the built-in Rename would not run either.
+		# Up to Godot 4.6 the dock swaps its "Create Root Node" view for the tree
+		# one frame after a root is created. If the dock tab is hidden instead,
+		# this simply runs out of frames, like the built-in Rename doing nothing.
+		return WAIT
 	var item := _scene_tree.get_selected()
 	if item == null or item.get_metadata(0) != node.get_path():
 		return WAIT # The dock rebuilds its tree a little later.
@@ -132,7 +135,7 @@ func _rename_state(node: Node) -> int:
 	return READY
 
 
-static func _is_item_shown(item: TreeItem) -> bool:
+func _is_item_shown(item: TreeItem) -> bool:
 	var parent := item.get_parent()
 	while parent:
 		if parent.collapsed:
@@ -165,7 +168,7 @@ func _find_scene_tree(dock: Node) -> Tree:
 	return null
 
 
-static func _has_window_between(node: Node, ancestor: Node) -> bool:
+func _has_window_between(node: Node, ancestor: Node) -> bool:
 	var parent := node.get_parent()
 	while parent and parent != ancestor:
 		if parent is Window:

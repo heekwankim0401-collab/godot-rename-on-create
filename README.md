@@ -44,7 +44,7 @@ It does **not** act on any of these:
 | Opening or switching scenes | Nothing is created |
 | Undo / redo of "Create Node" | No dialog involved |
 | Change Type | Replaces an existing node |
-| Reparent to New Node | Selection goes back to the moved nodes (see limitations) |
+| Reparent to New Node (Godot 4.4+) | Selection goes back to the moved nodes (see limitations) |
 | **2D Scene / 3D Scene / User Interface** root buttons | These buttons do not use the dialog |
 
 ## Known limitations
@@ -59,9 +59,12 @@ It does **not** act on any of these:
   plugin cannot tell them apart from other root changes. After one of them, press
   <kbd>F2</kbd> or <kbd>Enter</kbd>. Since godot#49521 the Scene dock already has focus.
   **Other Node** does use the dialog, so it is covered.
-- **Reparent to New Node is not covered.** It uses the same dialog, but the editor
-  selects the reparented nodes afterwards, not the new parent. The plugin only
-  renames a new node that is the one selected node.
+- **Reparent to New Node depends on the Godot version.** It uses the same dialog,
+  but the plugin only renames a new node that is the one selected node.
+  - In Godot 4.4 and later, the editor selects the reparented nodes afterwards,
+    so nothing is renamed.
+  - In Godot 4.2 and 4.3, the new parent stays selected, so its name opens for
+    editing.
 - **No per-user switch.** To stop the behaviour, disable the plugin in Project Settings.
 - **Scene dock must be visible.** If another dock tab is in front of it, nothing
   happens. The built-in rename has the same rule.
@@ -88,15 +91,16 @@ It does **not** act on any of these:
 
 ## Compatibility
 
-- **Tested in a running editor:** Godot 4.7.2 stable (official build) on Windows 11.
-  It was tested in both the default multi-window mode and single-window mode,
-  using the automated test below: 20 checks, all passing.
+- **Tested in a running editor:** Godot 4.2.2, 4.6.3 and 4.7.2 stable (official
+  builds) on Windows 11, using the automated test below: 20 checks per version,
+  all passing. All three ran in the default multi-window mode, and 4.7.2 also in
+  single-window mode.
   - In multi-window mode, the rename box's own window had OS keyboard focus
     after each create, so real typing goes there.
   - The test runner sent the key presses itself. Nobody typed them on a
     physical keyboard.
-- **Source-checked only:** Godot 4.2, 4.3, 4.4, 4.5 and 4.6 have the same signals
-  and dock structure, but nobody has run the plugin in those versions yet.
+- **Source-checked only:** Godot 4.3, 4.4 and 4.5 have the same signals and dock
+  structure, but nobody has run the plugin in those versions yet.
 
 ## Test project
 
@@ -135,8 +139,8 @@ Keep in mind:
   had OS focus.
 - Like any editor session, the run creates `.godot/`. It also re-saves
   `project.godot`, because it turns the add-on off and on again.
-- The runner uses some internal editor IDs from Godot 4.7.2, so it may need
-  adjusting for other versions.
+- The runner finds context menu items and buttons by their editor icons, so the
+  same file works on Godot 4.2.2, 4.6.3 and 4.7.2.
 
 ## License
 

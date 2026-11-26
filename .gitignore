@@ -4,3 +4,6 @@
 
 # Output of the automated editor test
 test_results.txt
+
+# Built release archives
+/dist/

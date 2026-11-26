@@ -13,10 +13,6 @@ extends EditorPlugin
 # screenshots. RT_SKIP11=1 skips the last step, which turns the add-on off and on
 # again. See the README section "Automated editor test".
 
-# SceneTreeDock::Tool enum values in Godot 4.7.2 (editor/docks/scene_tree_dock.h).
-const TOOL_CHANGE_TYPE := 10
-const TOOL_REPARENT_TO_NEW_NODE := 18
-
 ## Give up, write what we have and quit after this many seconds.
 const WATCHDOG_SECONDS := 420.0
 
@@ -99,6 +95,14 @@ func _is_renaming() -> bool:
 	return popup.visible and le.visible and le.has_focus()
 
 
+# Presses Esc in a rename box left open, so one failed step does not break the
+# keyboard shortcuts used by the next ones.
+func _close_rename_if_open() -> void:
+	if _is_renaming():
+		await _send_key(_rename_line_edit().get_window(), KEY_ESCAPE)
+		await _frames(6)
+
+
 # Renaming, and the name box holds the expected default name of the new node
 # (so a rename left open by an earlier step does not count).
 func _is_renaming_text(expected: String) -> bool:
@@ -154,15 +158,23 @@ func _create_via_dialog(type_name: String) -> bool:
 	return await _confirm_dialog(type_name)
 
 
-func _context_tool(tool_id: int) -> void:
+# Opens the Scene dock context menu and picks the item with the given editor
+# icon. Tool IDs differ between Godot versions; the icons do not.
+func _context_tool(icon_name: String) -> void:
 	_ste.emit_signal("rmb_pressed", _tree.get_screen_position() + Vector2(40, 40))
 	await _frames(4)
+	var icon := EditorInterface.get_editor_theme().get_icon(icon_name, "EditorIcons")
 	for m in _dock.find_children("*", "PopupMenu", false, false):
-		if m.visible:
-			m.hide()
-			m.id_pressed.emit(tool_id)
-			return
-	_log("      context menu not found")
+		if not m.visible:
+			continue
+		for i in m.item_count:
+			if m.get_item_icon(i) == icon:
+				var id: int = m.get_item_id(i)
+				m.hide()
+				m.id_pressed.emit(id)
+				return
+		m.hide()
+	_check("context menu item '%s' found" % icon_name, false)
 
 
 func _shot(label: String) -> void:
@@ -207,7 +219,7 @@ func _run() -> void:
 	for c in _ste.get_children():
 		if c is Tree:
 			_tree = c
-	_log("Godot %s, single_window=%s" % [Engine.get_version_info().string, EditorInterface.is_multi_window_enabled() == false])
+	_log("Godot %s, single_window=%s" % [Engine.get_version_info().string, get_tree().root.gui_embed_subwindows])
 	_check("plugin connected to node_created", _dock.get_signal_connection_list("node_created").size() > 0)
 
 	# 0. Opening a scene.
@@ -223,7 +235,7 @@ func _run() -> void:
 	var le := _rename_line_edit()
 	_check("1 create: default name selected", le != null and le.text == "Sprite2D" and le.get_selected_text() == "Sprite2D", _rename_info())
 	_shot("01_create")
-	if le:
+	if le and _is_renaming():
 		await _type_text(le.get_window(), "Player")
 		await _send_key(le.get_window(), KEY_ENTER)
 		await _frames(10)
@@ -234,7 +246,7 @@ func _run() -> void:
 	await _create_via_dialog("Node2D")
 	_check("2 create: rename editor opened", _is_renaming_text("Node2D"), _rename_info())
 	le = _rename_line_edit()
-	if le:
+	if le and _is_renaming():
 		await _send_key(le.get_window(), KEY_ESCAPE)
 		await _frames(10)
 	_check("2 esc: default name kept, editor closed", root.has_node("Node2D") and not _is_renaming(), _names(root))
@@ -280,7 +292,7 @@ func _run() -> void:
 
 	# 7. Change Type.
 	await _select([existing])
-	await _context_tool(TOOL_CHANGE_TYPE)
+	await _context_tool("Reload") # Change Type
 	await _confirm_dialog("Marker2D")
 	var changed := root.get_node_or_null("Existing")
 	_check("7 change type: no rename", changed != null and changed.get_class() == "Marker2D" and not _is_renaming(), _names(root) + " | " + _rename_info())
@@ -291,10 +303,18 @@ func _run() -> void:
 		_check("8 reparent to new node: skipped, 'Player' missing (step 1 failed)", false)
 	else:
 		await _select([player])
-		await _context_tool(TOOL_REPARENT_TO_NEW_NODE)
+		await _context_tool("ReparentToNewNode")
 		await _confirm_dialog("Node2D")
 		await _frames(70)
-		_check("8 reparent to new node: no rename", player.get_parent() != root and not _is_renaming(), "parent=%s %s" % [player.get_parent().name, _rename_info()])
+		var new_parent := player.get_parent()
+		var info := "parent=%s %s" % [new_parent.name, _rename_info()]
+		if Engine.get_version_info().hex >= 0x040400:
+			# 4.4+ selects the moved nodes afterwards, so nothing is renamed.
+			_check("8 reparent to new node: no rename", new_parent != root and not _is_renaming(), info)
+		else:
+			# 4.2-4.3 leave the new parent selected, so it is renamed.
+			_check("8 reparent to new node (4.2-4.3): new parent renamed", new_parent != root and _is_renaming_text(str(new_parent.name)), info)
+	await _close_rename_if_open()
 
 	# 9. New scene, "Other Node" root via dialog.
 	await _send_key(_main(), KEY_N, true)
@@ -308,7 +328,7 @@ func _run() -> void:
 		_check("9 other node root: rename editor opened", _is_renaming_text("Node3D"), _rename_info())
 		_shot("09_other_node_root")
 		le = _rename_line_edit()
-		if le:
+		if le and _is_renaming():
 			await _type_text(le.get_window(), "World")
 			await _send_key(le.get_window(), KEY_ENTER)
 			await _frames(10)
@@ -316,6 +336,7 @@ func _run() -> void:
 		_check("9 other node root: typed name applied", r != null and r.name == "World", str(r.name if r else "null"))
 
 	# 10. New scene, "2D Scene" button (documented as not covered).
+	await _close_rename_if_open()
 	await _send_key(_main(), KEY_N, true)
 	await _frames(30)
 	button_2d = _root_button("Node2D")
@@ -329,6 +350,7 @@ func _run() -> void:
 	if not OS.get_environment("RT_SKIP11").is_empty():
 		_finish()
 		return
+	await _close_rename_if_open()
 	EditorInterface.set_plugin_enabled("rename_on_create", false)
 	await _frames(10)
 	EditorInterface.open_scene_from_path("res://test/main.tscn")
