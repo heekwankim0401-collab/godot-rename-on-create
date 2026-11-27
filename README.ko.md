@@ -23,14 +23,12 @@ Godot 4용 작은 에디터 플러그인입니다. **새 노드 만들기**(Crea
 
 ### 공식 에셋 배포처에서 설치
 
-Rename on Create는 2026-11-26에 공식 배포처 두 곳에 제출했고, 지금 검토를 기다리고
-있습니다. 아래 링크는 승인된 뒤에 열립니다.
+Rename on Create는 공식 배포처 두 곳에서도 받을 수 있습니다.
 
 - [Godot 에셋 스토어](https://store.godotengine.org/asset/khkhk/rename-on-create/):
   Godot 4.7 이상 에디터의 Asset Store 탭에서 보입니다.
-- [Godot 에셋 라이브러리("Rename on Create" 검색)](https://godotengine.org/asset-library/asset?filter=Rename+on+Create):
-  Godot 4.2~4.6 에디터의 AssetLib 탭에서 보입니다. 에셋 페이지의 고유 번호는 승인될 때
-  정해지므로 지금은 검색 링크를 걸었습니다.
+- [Godot 에셋 라이브러리](https://godotengine.org/asset-library/asset/5631):
+  Godot 4.2~4.6 에디터의 AssetLib 탭에서 보입니다.
 
 어느 쪽으로 받든 같은 `addons/rename_on_create/` 폴더가 설치됩니다. 설치한 뒤 위의 2번처럼
 플러그인을 켭니다.
